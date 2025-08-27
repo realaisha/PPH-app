@@ -1,0 +1,30 @@
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Big datasets (optional, keep only small sample data if needed)
+*.csv
+*.xlsx
+*.parquet
+
+# Model training outputs (if too large)
+*.h5
+*.ckpt
+*.pth
