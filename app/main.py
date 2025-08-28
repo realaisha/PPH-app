@@ -9,8 +9,8 @@ from pathlib import Path
 
 # --------- Load artifacts ----------
 ARTIFACTS = Path(__file__).resolve().parent.parent / "artifacts"
-MODEL_PATH = ARTIFACTS / "maternal_risk_xgb_pipeline.pkl"     # <- trained model
-SCALER_PATH = ARTIFACTS / "numeric_scaler.pkl"      # <- saved StandardScaler
+MODEL_PATH = ARTIFACTS / "my_model.pkl"     # <- trained model
+SCALER_PATH = ARTIFACTS / "scaler.pkl"      # <- saved StandardScaler
 
 model = joblib.load(MODEL_PATH)
 scaler = joblib.load(SCALER_PATH)
