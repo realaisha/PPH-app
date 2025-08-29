@@ -1,11 +1,13 @@
 # app/main.py
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 import joblib
 import pandas as pd
 import numpy as np
 from pathlib import Path
+
 
 # --------- Load artifacts ----------
 ARTIFACTS = Path(__file__).resolve().parent.parent / "artifacts"
@@ -204,6 +206,86 @@ def predict_pph(payload: PPHInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+ 
+
+@app.post("/ussd")
+async def ussd(
+    sessionId: str = Form(...),
+    serviceCode: str = Form(...),
+    phoneNumber: str = Form(...),
+    text: str = Form("")
+):
+    """
+    Handles USSD requests from Africa's Talking.
+    """
+
+    response = ""
+
+    # Split user input
+    user_input = text.strip().split("*")
+
+    if text == "":
+        # First screen
+        response = "CON Welcome to PPH Risk Screening\n"
+        response += "1. Start Screening\n"
+        response += "2. Exit"
+    elif text == "1":
+        response = "CON Enter Age:"
+    elif len(user_input) == 2:
+        response = "CON Enter Systolic BP:"
+    elif len(user_input) == 3:
+        response = "CON Enter Diastolic BP:"
+    elif len(user_input) == 4:
+        response = "CON Enter Blood Sugar:"
+    elif len(user_input) == 5:
+        response = "CON Enter Body Temp:"
+    elif len(user_input) == 6:
+        response = "CON Enter Heart Rate:"
+    elif len(user_input) == 7:
+        response = "CON Enter BMI:"
+    elif len(user_input) == 8:
+        response = "CON Do you have Anaemia? (0=No, 1=Yes):"
+    elif len(user_input) == 9:
+        response = "CON Enter Parity (number of births):"
+    elif len(user_input) == 10:
+        response = "CON Delivery Method? (0=Normal, 1=Cesarean):"
+    elif len(user_input) == 11:
+        response = "CON History of PPH? (0=No, 1=Yes):"
+    elif len(user_input) == 12:
+        # Collect all responses
+        try:
+            data = {
+                "Age": float(user_input[1]),
+                "SystolicBP": float(user_input[2]),
+                "DiastolicBP": float(user_input[3]),
+                "BS": float(user_input[4]),
+                "BodyTemp": float(user_input[5]),
+                "HeartRate": float(user_input[6]),
+                "BMI": float(user_input[7]),
+                "Anaemia": int(user_input[8]),
+                "Parity": int(user_input[9]),
+                "DeliveryMethod": int(user_input[10]),
+                "HistoryPPH": int(user_input[11]),
+            }
+
+            # Call your prediction function
+            X = preprocess(data)
+            pred = model.predict(X)[0]
+
+            risk_map = {0: "Low", 1: "Medium", 2: "High"}
+            risk = risk_map.get(int(pred), "Unknown")
+
+            response = f"END Screening complete.\nRisk Level: {risk}"
+        except Exception as e:
+            response = f"END Error: {str(e)}"
+    elif text == "2":
+        response = "END Thank you for using PPH Screening."
+
+    else:
+        response = "END Invalid input."
+
+    return PlainTextResponse(response)
+
 
 @app.get("/")
 def root():
