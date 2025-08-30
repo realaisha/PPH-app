@@ -208,6 +208,18 @@ def predict_pph(payload: PPHInput):
         raise HTTPException(status_code=500, detail=str(e))
  
 
+def get_advice(risk_level: str) -> str:
+    risk_level = risk_level.lower()
+    if risk_level == "low":
+        return "🟢 Low Risk: Continue routine antenatal monitoring and standard care protocols."
+    elif risk_level == "medium":
+        return "🟠 Medium Risk: Recommend closer observation, frequent antenatal visits, and ensure readiness for referral if condition worsens."
+    elif risk_level == "high":
+        return "⚠️ High Risk: Immediate referral to a higher-level facility is advised. Ensure stabilization and prompt transfer."
+    else:
+        return "No advice available. Please review patient details."
+
+
 @app.post("/ussd")
 async def ussd(
     sessionId: str = Form(...),
@@ -220,39 +232,47 @@ async def ussd(
     """
 
     response = ""
-
-    # Split user input
     user_input = text.strip().split("*")
 
     if text == "":
-        # First screen
         response = "CON Welcome to PPH Risk Screening\n"
         response += "1. Start Screening\n"
         response += "2. Exit"
+
     elif text == "1":
         response = "CON Enter Age:"
+
     elif len(user_input) == 2:
         response = "CON Enter Systolic BP:"
+
     elif len(user_input) == 3:
         response = "CON Enter Diastolic BP:"
+
     elif len(user_input) == 4:
         response = "CON Enter Blood Sugar:"
+
     elif len(user_input) == 5:
         response = "CON Enter Body Temp:"
+
     elif len(user_input) == 6:
         response = "CON Enter Heart Rate:"
+
     elif len(user_input) == 7:
         response = "CON Enter BMI:"
+
     elif len(user_input) == 8:
         response = "CON Do you have Anaemia? (0=No, 1=Yes):"
+
     elif len(user_input) == 9:
         response = "CON Enter Parity (number of births):"
+
     elif len(user_input) == 10:
         response = "CON Delivery Method? (0=Normal, 1=Cesarean):"
+
     elif len(user_input) == 11:
         response = "CON History of PPH? (0=No, 1=Yes):"
+
     elif len(user_input) == 12:
-        # Collect all responses
         try:
             data = {
                 "Age": float(user_input[1]),
@@ -268,16 +288,20 @@ async def ussd(
                 "HistoryPPH": int(user_input[11]),
             }
 
-            # Call your prediction function
+            # Prediction
             X = preprocess(data)
             pred = model.predict(X)[0]
 
             risk_map = {0: "Low", 1: "Medium", 2: "High"}
             risk = risk_map.get(int(pred), "Unknown")
 
-            response = f"END Screening complete.\nRisk Level: {risk}"
+            # Attach advice
+            advice = get_advice(risk)
+
+            response = f"END Screening complete.\nRisk Level: {risk}\n{advice}"
         except Exception as e:
             response = f"END Error: {str(e)}"
+
     elif text == "2":
         response = "END Thank you for using PPH Screening."
 
@@ -285,6 +309,7 @@ async def ussd(
         response = "END Invalid input."
 
     return PlainTextResponse(response)
+
 
 
 @app.get("/")
